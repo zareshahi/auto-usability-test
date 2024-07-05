@@ -7,98 +7,77 @@ import seaborn as sns
 from selenium import webdriver
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
-from selenium.webdriver.firefox.service import Service as FirefoxService
 from webdriver_manager.firefox import GeckoDriverManager
 from webdriver_manager.core.driver_cache import DriverCacheManager
 from dotenv import load_dotenv
-
 from huggingface_chatbot import HuggingFaceChatBot
+import subprocess
+from selenium.webdriver.chrome.options import Options as ChromeOptions
 
 load_dotenv()
 install_path = "./ENV/driver"
 cache_manager = DriverCacheManager(install_path)
-driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager(cache_manager=cache_manager).install()))
+options = ChromeOptions()
+options.set_capability("se:name", "test_visit_basic_auth_secured_page (ChromeTests)")
+driver = webdriver.Remote(command_executor="http://localhost:4444/wd/hub", options=options)
 
 # Initialize WebDriver and OpenAI API
 hf_chatbot = HuggingFaceChatBot()
 
-action_log = []
-
-def human_like_mouse_move(driver, element, duration=1.0):
-    action = ActionChains(driver)
-    start_x, start_y = (
-        action.w3c_actions.pointer_inputs[0].parameters["origin"]["x"],
-        action.w3c_actions.pointer_inputs[0].parameters["origin"]["y"],
-    )
-    end_x, end_y = element.location["x"], element.location["y"]
-
-    num_steps = int(duration * 60)  # 60 steps per second
-    for step in range(num_steps):
-        progress = step / num_steps
-        x = start_x + (end_x - start_x) * progress + random.uniform(-3, 3)  # Adding some randomness
-        y = start_y + (end_y - start_y) * progress + random.uniform(-3, 3)
-        action.move_to_element_with_offset(element, int(x), int(y)).perform()
-        time.sleep(duration / num_steps)
-        # Log mouse movement
-        action_log.append({"type": "move", "x": int(x), "y": int(y), "timestamp": time.time()})
-
-def smooth_scroll(driver, start, end, duration=1.0):
-    steps = int(duration * 60)  # 60 steps per second
-    for step in range(steps):
-        scroll = start + (end - start) * (step / steps) + random.uniform(-3, 3)
-        driver.execute_script(f"window.scrollTo(0, {int(scroll)});")
-        time.sleep(duration / steps)
-        # Log scroll action
-        action_log.append({"type": "scroll", "scroll_position": int(scroll), "timestamp": time.time()})
 
 def get_actions_from_html(html_content):
-    response = hf_chatbot.conversation(f"The following is the HTML content of a webpage: {html_content}\nWhat actions should be performed on this webpage?")
+    response = (
+        hf_chatbot.conversation(
+            f"The following is the HTML content of a webpage: {html_content}\nWhat actions should be performed on this webpage? just return .robot TestSuite file format"
+        )
+        or ""
+    )
+    response = response.split("```")[1] or response
+    robot_file_path = "./ENV/result.robot"
+    with open(robot_file_path, "w", encoding="utf-8") as robot_file:
+        robot_file.write(response or "")
     print("**" * 50)
     print(response)
     print("**" * 50)
-    return response
+    return robot_file_path
+
 
 try:
     # Open the webpage
     driver.get("https://react-landing-page-template-93ne.vercel.app/")
 
     # Extract HTML body content
-    html_content = driver.find_element(By.TAG_NAME, 'body').get_attribute('innerHTML')
+    html_content = driver.find_element(By.TAG_NAME, "body").get_attribute("innerHTML")
 
     # Get actions from the chatbot based on HTML content
-    actions = get_actions_from_html(html_content)
+    robot_file_path = get_actions_from_html(html_content)
 
-    # Perform AI-driven interactions based on the chatbot's response
-    for action in actions.split("\n"):
-        if "click" in action.lower():
-            try:
-                # Extract the element locator from the action
-                element_text = action.split("click")[1].strip().strip('"').strip("'")
-                element = driver.find_element(By.LINK_TEXT, element_text)
-                human_like_mouse_move(driver, element)
-                element.click()
-                action_log.append(
-                    {
-                        "type": "click",
-                        "element": element_text,
-                        "x": element.location["x"],
-                        "y": element.location["y"],
-                        "timestamp": time.time(),
-                    }
-                )
-            except Exception as e:
-                print(f"Error clicking element: {e}")
-                action_log.append({"type": "error", "message": str(e), "timestamp": time.time()})
-        elif "scroll" in action.lower():
-            smooth_scroll(driver, 0, driver.execute_script("return document.body.scrollHeight"), duration=2)
-        # Add more conditions based on possible AI outputs
-
-except Exception as e:
-    print(f"Exception encountered: {e}")
-
-finally:
-    # Ensure the WebDriver is closed properly
+    # Close the WebDriver as we will use Robot Framework for interaction
     driver.quit()
+
+    # Execute the .robot file using the Robot Framework
+    result_path = "./ENV/results"
+    os.makedirs(result_path, exist_ok=True)
+    subprocess.run(
+        [
+            "robot",
+            "--variable",
+            "BROWSER:Chrome",
+            "--variable",
+            "URL:http://localhost:4443",
+            "-d",
+            result_path,
+            robot_file_path,
+        ],
+        check=True,
+    )
+
+    # Load the log file generated by the Robot Framework
+    log_file_path = os.path.join(result_path, "log.html")
+    with open(log_file_path, "r") as f:
+        log_content = f.read()
+    # Parse log_content to extract action logs (simplified example)
+    action_log = json.loads(log_content)  # Adjust based on actual log format
 
     # Save action log to file
     with open("action_log.json", "w") as f:
@@ -137,3 +116,13 @@ finally:
         plt.show()
     else:
         print("No clicks recorded.")
+
+except Exception as e:
+    print(f"Exception encountered: {e}")
+
+finally:
+    # Ensure the WebDriver is closed properly if still open
+    try:
+        driver.quit()
+    except:
+        pass

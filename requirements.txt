@@ -4,3 +4,5 @@ hugchat
 matplotlib
 seaborn
 python-dotenv
+robotframework
+robotframework-seleniumlibrary
