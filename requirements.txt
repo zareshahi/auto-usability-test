@@ -1,0 +1,6 @@
+webdriver-manager
+selenium
+hugchat
+matplotlib
+seaborn
+python-dotenv
