@@ -1,5 +1,3 @@
-سلام خوش آمدید
-</br>
-این کد جهت شرکت در مسابقه codex شرکت Gaply نوشته شده است.
-</br>
-هر گونه استفاده از ایده یا قسمتی از کد تنها با رضایت توسعه دهنده آن (علی زارع شاهی) مجاز می‌باشد.
+Hello Community
+<br/>
+This is python based project to use LLMs for generate auto usability test and make more UI/UX safe apps 
