@@ -39,25 +39,6 @@ Welcome to the Auto Usability Test Generator project! This Python-based tool uti
    python main.py
    ```
 
-## Example
-```python
-from test_generator import UsabilityTestGenerator
-
-app_details = {
-    "app_name": "MyApp",
-    "components": [
-        {"type": "button", "label": "Submit"},
-        {"type": "input", "label": "Username"},
-        {"type": "input", "label": "Password"}
-    ]
-}
-
-generator = UsabilityTestGenerator(app_details)
-tests = generator.generate()
-for test in tests:
-    print(test)
-```
-
 ## Contributing
 We welcome contributions! Please follow these steps:
 1. Fork the repository.
