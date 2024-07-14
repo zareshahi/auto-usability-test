@@ -51,7 +51,7 @@ We welcome contributions! Please follow these steps:
 This project is licensed under the MIT License. See the [LICENSE](LICENSE) file for details.
 
 ## Contact
-For any questions or suggestions, please open an issue or contact us at zareshahi@gmail.com.
+For any questions or suggestions, please open an issue or contact us at a.zareshahi1377 [at] gmail.com.
 
 ## Acknowledgements
 We extend our gratitude to the open-source community and the developers of the libraries we rely on.
